@@ -1,6 +1,4 @@
-// Get Azure credentials from the Jenkins vault
-def acr = credentials('acr-creds')
-def appService = credentials('azure-sp')
+
 
 // --- !!! IMPORTANT: REPLACE THESE TWO VALUES !!! ---
 def acrName = "mycicdacr8957" // Paste your ACR name (e.g., "mycicdacr1234")
@@ -39,12 +37,20 @@ pipeline {
             }
         }
 
+        // PASTE THIS NEW STAGE in place of the old one
+
         stage('Push to ACR') {
             steps {
                 echo "Logging in to ACR and pushing image..."
-                // Use the 'acr-creds' credentials we stored in Jenkins
-                bat "docker login ${acrName}.azurecr.io -u ${acr.username} -p ${acr.password}"
-                bat "docker push ${dockerImageName}"
+                
+                // Use 'acr-creds' to inject username and password as environment variables
+                // This is the correct, secure way to handle these credentials.
+                withCredentials([usernamePassword(credentialsId: 'acr-creds', usernameVariable: 'ACR_USERNAME', passwordVariable: 'ACR_PASSWORD')]) {
+                    
+                    // We use %...% because 'bat' is a Windows command
+                    bat "docker login ${acrName}.azurecr.io -u %ACR_USERNAME% -p %ACR_PASSWORD%"
+                    bat "docker push ${dockerImageName}"
+                }
             }
         }
 
